@@ -1,47 +1,42 @@
 import cv2
 import mediapipe as mp
-from mediapipe.tasks import python
-from mediapipe.tasks.python import vision
+import time 
 
-# Initialize the HandLandmarker
-base_options = python.BaseOptions(model_asset_path='Hand_Tracker\hand_landmarker.task')
-options = vision.HandLandmarkerOptions(base_options=base_options, num_hands=2)
-detector = vision.HandLandmarker.create_from_options(options)
+cap=cv2.VideoCapture(0)
 
-# Create a VideoCapture object to read from webcam
-cap = cv2.VideoCapture(0)
+mpHands = mp.solutions.hands
+hands = mpHands.Hands()
+mpDraw = mp.solutions.drawing_utils
 
-# Initialize Mediapipe drawing utilities
-mp_drawing = mp.solutions.drawing_utils
-mp_hands = mp.solutions.hands
+pTime=0
+cTime=0
 
-# Loop until 'q' is pressed
-while cap.isOpened():
-    # Capture frame-by-frame
-    ret, frame = cap.read()
-    if not ret:
-        break
+while True :
+    req,img =cap.read()
+    imgRGB = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
+    result = hands.process(imgRGB)
+    # print(result.multi_hand_landmarks)
+    
+    if result.multi_hand_landmarks:
+        for handlms in result.multi_hand_landmarks:
+           for id , lm in enumerate(handlms.landmark):
+            #    print(id,lm)
+               h,w,c = img.shape
+               cx,cv = int(lm.x*w),int(lm.y*h)
+               if id  :
+                cv2.circle(img,(cx,cv),7,(0,0,255),cv2.FILLED)
 
-    # Resize frame for better performance
-    frame = cv2.resize(frame, (540, 380), interpolation=cv2.INTER_CUBIC)
 
-    # Convert the frame to MediaPipe Image
-    mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame)
+           mpDraw.draw_landmarks(img,handlms,mpHands.HAND_CONNECTIONS)
+         
+    cTime=time.time()
+    fps=1/(cTime-pTime)
+    pTime=cTime
+    cv2.putText(img,str(int(fps)),(10,70),cv2.FONT_HERSHEY_COMPLEX_SMALL,2,(255,0,255),3)     
 
-    # Perform hand detection
-    detection_result = detector.detect(mp_image)
 
-    # Draw landmarks on the frame
-    for hand_landmarks in detection_result.hand_landmarks:
-        mp_drawing.draw_landmarks(
-            frame,
-            hand_landmarks,
-            mp_hands.HAND_CONNECTIONS
-        )
-
-    # Display the resulting frame
-    cv2.imshow('Hand Detection', frame)
-
+    cv2.imshow("Frame",img)
+    
     # Exit the loop on pressing 'q'
     if cv2.waitKey(25) & 0xFF == ord('q'):
         break
