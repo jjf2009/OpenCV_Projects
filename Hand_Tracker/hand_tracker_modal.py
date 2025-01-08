@@ -20,14 +20,31 @@ class handDetector:
 
     def findHands(self, img, draw=True):
         imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        results = self.hands.process(imgRGB)
+        self.results = self.hands.process(imgRGB)
 
-        if results.multi_hand_landmarks:
-            for handLms in results.multi_hand_landmarks:
+        if self.results.multi_hand_landmarks:
+            for handLms in self.results.multi_hand_landmarks:
                 if draw:
                     self.mpDraw.draw_landmarks(img, handLms, self.mpHands.HAND_CONNECTIONS)
         return img
+    
+    def findPosition(self, img, handNo=0, draw=True):
+        lmlist = []
 
+        if self.results.multi_hand_landmarks:
+            # Check if the requested handNo is within range
+            if handNo < len(self.results.multi_hand_landmarks):
+                myHand = self.results.multi_hand_landmarks[handNo]
+                for id, lm in enumerate(myHand.landmark):
+                    h, w, c = img.shape
+                    cx, cy = int(lm.x * w), int(lm.y * h)
+                    lmlist.append([id, cx, cy])
+                    if draw:
+                        cv2.circle(img, (cx, cy), 7, (0, 0, 255), cv2.FILLED)
+            else:
+                print(f"Error: handNo {handNo} is out of range.")
+        return lmlist
+     
 
 def main():
     pTime = 0
@@ -47,6 +64,9 @@ def main():
             break
 
         img = detector.findHands(img)
+        lmlist=detector.findPosition(img)
+        if len(lmlist)!=0:
+            print(lmlist[4])
 
         cTime = time.time()
         fps = 1 / (cTime - pTime) if (cTime - pTime) > 0 else 0
