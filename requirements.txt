@@ -1,0 +1,5 @@
+matplotlib==3.10.0
+mediapipe==0.10.20
+opencv_contrib_python==4.10.0.84
+opencv_python==4.10.0.84
+opencv_python_headless==4.8.1.78
